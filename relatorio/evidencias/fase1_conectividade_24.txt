@@ -1,0 +1,26 @@
+# fase1_conectividade_24.txt | host: cliente | script: fase1_testes.sh | 2026-11-19 15:00:27 -03
+
+### Teste 1: ping cliente -> servidor (/24)
+$ ping -c 4 192.168.50.10
+PING 192.168.50.10 (192.168.50.10) 56(84) bytes of data.
+64 bytes from 192.168.50.10: icmp_seq=1 ttl=64 time=1.43 ms
+64 bytes from 192.168.50.10: icmp_seq=2 ttl=64 time=0.862 ms
+64 bytes from 192.168.50.10: icmp_seq=3 ttl=64 time=0.830 ms
+64 bytes from 192.168.50.10: icmp_seq=4 ttl=64 time=0.819 ms
+
+--- 192.168.50.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3006ms
+rtt min/avg/max/mdev = 0.819/0.984/1.426/0.255 ms
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo:  0% packet loss)
+
+### Teste 2: ssh cliente -> servidor (/24)
+$ ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new -i /home/vagrant/.ssh/id_lab vagrant@192.168.50.10 'hostname; ip -4 -br addr'
+servidor
+lo               UNKNOWN        127.0.0.1/8 
+eth0             UP             10.0.2.15/24 metric 100 
+eth1             UP             192.168.50.10/24 
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: 192.168.50.10)
+
+### Resumo: 2 teste(s), 0 falha(s)

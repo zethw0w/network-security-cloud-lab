@@ -1,0 +1,28 @@
+\chapter{Introdução}
+
+A proteção de um ambiente computacional combina controles em camadas distintas: a
+forma como a rede é endereçada e segmentada, as regras que filtram o tráfego entre os
+hosts e, nos serviços de nuvem, quem pode executar quais ações sobre quais recursos. Uma
+falha em qualquer dessas camadas costuma bastar para expor dados, como mostram os
+recorrentes casos de \textit{buckets} de armazenamento deixados públicos por engano.
+
+Este relatório documenta um laboratório controlado que exercita essas três camadas. Duas
+máquinas virtuais Ubuntu Server 22.04, ligadas por uma rede interna isolada do VirtualBox,
+fazem os papéis de \emph{servidor} e \emph{cliente}. Sobre elas foram realizadas quatro
+fases: (1) endereçamento estático e divisão da rede 192.168.50.0/24 em sub-redes /26;
+(2) publicação de um serviço web na porta 8080 e de SSH, com um \textit{firewall} local
+(\texttt{ufw}) que libera somente a porta 8080 vinda do cliente, validado com
+\texttt{nmap} antes e depois; (3) criação de um usuário com permissão mínima sobre um
+\textit{bucket} compatível com S3 e a correção proposital desse \textit{bucket} de público
+para privado; e (4) uma verificação final que reúne evidências de todos os controles.
+
+Como o projeto MinIO de código aberto, sugerido pelo enunciado para simulação local, foi
+arquivado e teve os binários retirados do site oficial, a Fase 3 utilizou o SILO, um
+\textit{fork} comunitário mantido do MinIO que preserva a mesma API S3, a mesma API
+administrativa e o mesmo cliente de linha de comando (renomeado \texttt{mcli})
+\cite{silo-docs,minio-arquivado}.
+
+Todas as etapas foram automatizadas por \textit{scripts} que registram cada comando,
+sua saída e seu código de saída; esses registros compõem as evidências apresentadas no
+\autoref{cap:desenvolvimento} e no Anexo~\ref{anexo:roteiro}. O documento segue a
+NBR 14724 \cite{abnt14724}.

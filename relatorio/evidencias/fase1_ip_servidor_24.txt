@@ -1,0 +1,21 @@
+# fase1_ip_servidor_24.txt | host: servidor | script: fase1_ip.sh | 2026-11-19 15:00:05 -03
+
+### Configuração netplan aplicada em eth1
+$ cat /etc/netplan/60-lab.yaml
+# Rede do laboratório — servidor (192.168.50.10/24)
+network:
+  version: 2
+  ethernets:
+    eth1:
+      dhcp4: false
+      addresses: [192.168.50.10/24]
+[código de saída: 0]
+$ netplan apply && sleep 2
+WARNING:root:Cannot call Open vSwitch: ovsdb-server.service is not running.
+[código de saída: 0]
+$ ip -4 -br addr show dev eth1
+eth1             UP             192.168.50.10/24 
+[código de saída: 0]
+$ ip route show dev eth1
+192.168.50.0/24 proto kernel scope link src 192.168.50.10 
+[código de saída: 0]

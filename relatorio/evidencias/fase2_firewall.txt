@@ -1,0 +1,66 @@
+# fase2_firewall.txt | host: servidor | script: fase2_firewall.sh | 2026-11-19 15:02:36 -03
+
+### Estado antes da configuração
+$ ufw status verbose
+Status: inactive
+[código de saída: 0]
+
+### Regras aplicadas
+$ ufw --force reset
+Backing up 'user.rules' to '/etc/ufw/user.rules.20261119_150236'
+Backing up 'before.rules' to '/etc/ufw/before.rules.20261119_150236'
+Backing up 'after.rules' to '/etc/ufw/after.rules.20261119_150236'
+Backing up 'user6.rules' to '/etc/ufw/user6.rules.20261119_150236'
+Backing up 'before6.rules' to '/etc/ufw/before6.rules.20261119_150236'
+Backing up 'after6.rules' to '/etc/ufw/after6.rules.20261119_150236'
+[código de saída: 0]
+$ ufw default deny incoming
+Default incoming policy changed to 'deny'
+(be sure to update your rules accordingly)
+[código de saída: 0]
+$ ufw default allow outgoing
+Default outgoing policy changed to 'allow'
+(be sure to update your rules accordingly)
+[código de saída: 0]
+$ ufw default deny routed
+Default routed policy changed to 'deny'
+(be sure to update your rules accordingly)
+[código de saída: 0]
+$ ufw allow in on eth1 proto tcp from 192.168.50.20 to 192.168.50.10 port 8080 comment 'Fase 2: HTTP 8080 somente da VM cliente'
+Rules updated
+[código de saída: 0]
+$ ufw allow in on eth0 proto tcp from 10.0.2.2 to any port 22 comment 'Gerencia Vagrant via NAT (fora da rede do lab)'
+Rules updated
+[código de saída: 0]
+$ ufw logging low
+Logging enabled
+[código de saída: 0]
+$ ufw --force enable
+Firewall is active and enabled on system startup
+[código de saída: 0]
+
+### Estado depois da configuração
+$ ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+192.168.50.10 8080/tcp on eth1 ALLOW IN    192.168.50.20              # Fase 2: HTTP 8080 somente da VM cliente
+22/tcp on eth0             ALLOW IN    10.0.2.2                   # Gerencia Vagrant via NAT (fora da rede do lab)
+[código de saída: 0]
+$ ufw status numbered
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 192.168.50.10 8080/tcp on eth1 ALLOW IN    192.168.50.20              # Fase 2: HTTP 8080 somente da VM cliente
+[ 2] 22/tcp on eth0             ALLOW IN    10.0.2.2                   # Gerencia Vagrant via NAT (fora da rede do lab)
+[código de saída: 0]
+$ iptables -S ufw-user-input
+-N ufw-user-input
+-A ufw-user-input -s 192.168.50.20/32 -d 192.168.50.10/32 -i eth1 -p tcp -m tcp --dport 8080 -j ACCEPT
+-A ufw-user-input -s 10.0.2.2/32 -i eth0 -p tcp -m tcp --dport 22 -j ACCEPT
+[código de saída: 0]

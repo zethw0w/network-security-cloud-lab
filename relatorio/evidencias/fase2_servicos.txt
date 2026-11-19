@@ -1,0 +1,29 @@
+# fase2_servicos.txt | host: servidor | script: fase2_servicos.sh | 2026-11-19 15:01:38 -03
+
+### Subindo os serviços
+$ cat /etc/systemd/system/lab-http.service
+[Unit]
+Description=Laboratorio - servidor web simples (python3 -m http.server 8080)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /srv/lab-www
+DynamicUser=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+[código de saída: 0]
+$ systemctl daemon-reload && systemctl enable --now lab-http ssh && sleep 1
+Synchronizing state of ssh.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable ssh
+[código de saída: 0]
+$ systemctl is-active lab-http ssh
+active
+active
+[código de saída: 0]
+$ ss -tlnp | grep -E ':(22|8080) '
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=2195,fd=3))           
+LISTEN 0      5            0.0.0.0:8080      0.0.0.0:*    users:(("python3",pid=3198,fd=3))        
+LISTEN 0      128             [::]:22           [::]:*    users:(("sshd",pid=2195,fd=4))           
+[código de saída: 0]

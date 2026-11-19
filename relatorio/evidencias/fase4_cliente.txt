@@ -1,0 +1,60 @@
+# fase4_cliente.txt | host: cliente | script: fase4_cliente.sh | 2026-11-19 15:04:57 -03
+
+### Varredura das portas de interesse
+$ nmap -Pn -sS -sV --version-light -p 22,80,443,8080,9000,9001 192.168.50.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2026-11-19 15:04 -03
+Nmap scan report for 192.168.50.10
+Host is up (0.00059s latency).
+
+PORT     STATE    SERVICE    VERSION
+22/tcp   filtered ssh
+80/tcp   filtered http
+443/tcp  filtered https
+8080/tcp open     http       SimpleHTTPServer 0.6 (Python 3.10.12)
+9000/tcp filtered cslistener
+9001/tcp filtered tor-orport
+MAC Address: 08:00:27:50:00:10 (Oracle VirtualBox virtual NIC)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 7.47 seconds
+[código de saída: 0]
+
+### Teste 1: varredura TCP completa encontra somente: 8080
+$ nmap -Pn -sS -T4 --min-rate 1000 --max-retries 1 -p- 192.168.50.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2026-11-19 15:05 -03
+Nmap scan report for 192.168.50.10
+Host is up (0.00054s latency).
+Not shown: 65534 filtered ports
+PORT     STATE SERVICE
+8080/tcp open  http-proxy
+MAC Address: 08:00:27:50:00:10 (Oracle VirtualBox virtual NIC)
+
+Nmap done: 1 IP address (1 host up) scanned in 86.47 seconds
+[código de saída: 0]
+=> RESULTADO: PASSOU (portas abertas: 8080; esperado: 8080)
+
+### Teste 2: HTTP 8080 responde ao cliente
+$ curl -s -m 5 -o /dev/null -w 'HTTP %{http_code}\n' http://192.168.50.10:8080/
+HTTP 200
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 200)
+
+### Teste 3: SSH (22) bloqueado para o cliente
+$ nc -zv -w 3 192.168.50.10 22
+nc: connect to 192.168.50.10 port 22 (tcp) timed out: Operation now in progress
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+
+### Teste 4: API S3 (9000) bloqueada para o cliente
+$ curl -s -m 5 http://192.168.50.10:9000/minio/health/live
+
+[código de saída: 28]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+
+### Teste 5: console do SILO (9001) bloqueado para o cliente
+$ curl -s -m 5 http://192.168.50.10:9001/
+
+[código de saída: 28]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+
+### Resumo: 5 teste(s), 0 falha(s)

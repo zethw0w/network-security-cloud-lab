@@ -1,0 +1,108 @@
+% Os arquivos de anexos/codigo/ são uma cópia do código usado na execução,
+% feita automaticamente pelo rodar_lab.ps1 (ou: .\rodar_lab.ps1 -SomenteCopiarCodigo).
+\newcommand{\codigo}[2]{%
+  \par\medskip\noindent\textbf{#2} (\texttt{\detokenize{#1}})\par
+  \IfFileExists{anexos/codigo/#1}{%
+    \VerbatimInput[fontsize=\scriptsize,breaklines,breakanywhere,frame=single,framesep=2mm,numbers=left,numbersep=4pt]{anexos/codigo/#1}}{%
+    \textcolor{red}{Arquivo anexos/codigo/\detokenize{#1} não encontrado.}}\par}
+
+\chapter{Roteiro de execução e ambiente}\label{anexo:roteiro}
+
+O laboratório completo é reproduzido pelos comandos abaixo, executados no hospedeiro
+Windows a partir da pasta do projeto. Cada \textit{script} grava suas evidências em
+\texttt{relatorio/evidencias/}.
+
+\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=2mm]
+vagrant up              # cria e provisiona cliente e servidor
+.\rodar_lab.ps1         # executa as fases 1 a 4 na ordem abaixo
+\end{Verbatim}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Ordem de execução dos scripts}\label{tab:roteiro}
+  \footnotesize
+  \begin{tabular}{clll}
+    \hline
+    \textbf{Fase} & \textbf{VM} & \textbf{Comando} & \textbf{Evidência gerada} \\
+    \hline
+    1 & servidor & \texttt{sudo bash fase1\_ip.sh servidor 24}  & \texttt{fase1\_ip\_servidor\_24.txt} \\
+    1 & cliente  & \texttt{sudo bash fase1\_ip.sh cliente 24}   & \texttt{fase1\_ip\_cliente\_24.txt} \\
+    1 & cliente  & \texttt{bash fase1\_testes.sh 24}            & \texttt{fase1\_conectividade\_24.txt} \\
+    1 & cliente  & \texttt{bash fase1\_subredes.sh}             & \texttt{fase1\_subredes.txt} \\
+    1 & ambas    & \texttt{fase1\_ip.sh <papel> 26} e \texttt{fase1\_testes.sh 26} & \texttt{fase1\_*\_26.txt} \\
+    1 & cliente  & \texttt{sudo bash fase1\_segmentacao.sh}     & \texttt{fase1\_segmentacao.txt} \\
+    2 & servidor & \texttt{sudo bash fase2\_servicos.sh}        & \texttt{fase2\_servicos.txt} \\
+    2 & cliente  & \texttt{sudo bash fase2\_scan.sh antes}      & \texttt{fase2\_nmap\_antes.txt} \\
+    2 & servidor & \texttt{sudo bash fase2\_firewall.sh}        & \texttt{fase2\_firewall.txt} \\
+    2 & cliente  & \texttt{sudo bash fase2\_scan.sh depois}     & \texttt{fase2\_nmap\_depois.txt} \\
+    3 & servidor & \texttt{sudo bash fase3\_silo.sh}            & \texttt{fase3\_iam.txt} \\
+    3 & servidor & \texttt{sudo bash fase3\_bucket.sh publico}  & \texttt{fase3\_bucket\_publico.txt} \\
+    3 & servidor & \texttt{sudo bash fase3\_bucket.sh privado}  & \texttt{fase3\_bucket\_privado.txt} \\
+    4 & servidor & \texttt{sudo bash fase4\_servidor.sh}        & \texttt{fase4\_servidor.txt} \\
+    4 & cliente  & \texttt{sudo bash fase4\_cliente.sh}         & \texttt{fase4\_cliente.txt} \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+\ifcompleto\codigo{Vagrantfile}{Definição das VMs}\fi
+\codigo{politica-lab-rw.json}{Política IAM de menor privilégio}
+
+\chapter{Prints de configuração}
+\renewcommand{\printw}{0.4}
+
+\printtela{vagrant-up.png}{Recriação do ambiente: \texttt{vagrant destroy -f} e \texttt{vagrant up}, com o adaptador 1 em NAT e o adaptador 2 na rede interna (\texttt{intnet})}
+\printtela{provisionamento.png}{Provisionamento concluído: instalação de \texttt{nmap}, \texttt{ufw}, \texttt{curl} e OpenSSH no servidor}
+\printtela{acesso-servidor.png}{Acesso à VM servidor (\texttt{vagrant ssh servidor}): Ubuntu 22.04.5 LTS}
+\printtela{acesso-cliente.png}{Acesso à VM cliente (\texttt{vagrant ssh cliente}): Ubuntu 22.04.5 LTS}
+\printtela{virtualbox-rede-interna.png}{Adaptador 2 das VMs ligado à rede interna \texttt{lab-net}}
+\printtela{vagrant-status.png}{VMs em execução (\texttt{vagrant status})}
+\printtela{virtualbox-detalhes.png}{VirtualBox Manager: VM \texttt{lab-nsce-servidor} com o adaptador 1 em NAT e o adaptador 2 na rede interna \texttt{lab-net}}
+
+\chapter{Scripts do laboratório}
+
+\ifcompleto\else
+Os \textit{scripts} que automatizam cada fase acompanham este relatório na pasta
+\texttt{lab/} do projeto (versão completa com o código-fonte: \texttt{main-completo.pdf}).
+A \autoref{tab:scripts} resume a função de cada um.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Scripts do laboratório}\label{tab:scripts}
+  \footnotesize
+  \begin{tabular}{L{0.32\textwidth}L{0.6\textwidth}}
+    \hline
+    \textbf{Script} & \textbf{Função} \\
+    \hline
+    \texttt{provision.sh} & instala pacotes e gera/autoriza a chave SSH \\
+    \texttt{fase1\_ip.sh} & IP estático por \textit{netplan} (/24 ou /26) \\
+    \texttt{fase1\_subredes.sh} & cálculo das sub-redes /26 \\
+    \texttt{fase1\_testes.sh} & \texttt{ping} e \texttt{ssh} cliente $\rightarrow$ servidor \\
+    \texttt{fase1\_segmentacao.sh} & cliente na sub-rede B sem alcançar o servidor \\
+    \texttt{fase2\_servicos.sh} & serviço web na 8080 e SSH \\
+    \texttt{fase2\_scan.sh} & \texttt{nmap} antes/depois do \textit{firewall} \\
+    \texttt{fase2\_firewall.sh} & regras do \texttt{ufw} \\
+    \texttt{fase3\_silo.sh} & instala o SILO, cria \textit{buckets}, política e usuário \\
+    \texttt{fase3\_bucket.sh} & \textit{bucket} público e depois privado \\
+    \texttt{fase4\_servidor.sh}, \texttt{fase4\_cliente.sh} & verificação final com resultado esperado e veredito \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+\fi
+
+\ifcompleto
+\codigo{comum.sh}{Funções comuns e registro de evidências}
+\codigo{provision.sh}{Provisionamento das VMs}
+\codigo{fase1_ip.sh}{Fase 1 --- IP estático}
+\codigo{fase1_subredes.sh}{Fase 1 --- cálculo de sub-redes}
+\codigo{fase1_testes.sh}{Fase 1 --- testes de conectividade}
+\codigo{fase1_segmentacao.sh}{Fase 1 --- teste de segmentação}
+\codigo{fase2_servicos.sh}{Fase 2 --- serviços}
+\codigo{fase2_scan.sh}{Fase 2 --- varredura}
+\codigo{fase2_firewall.sh}{Fase 2 --- firewall}
+\codigo{fase3_silo.sh}{Fase 3 --- SILO e IAM}
+\codigo{fase3_bucket.sh}{Fase 3 --- bucket público/privado}
+\codigo{fase4_servidor.sh}{Fase 4 --- verificação no servidor}
+\codigo{fase4_cliente.sh}{Fase 4 --- verificação no cliente}
+\fi

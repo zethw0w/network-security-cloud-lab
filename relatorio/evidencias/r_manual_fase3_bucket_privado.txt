@@ -1,0 +1,21 @@
+# manual_fase3_bucket_privado.txt | host: servidor | execução manual | 2026-11-19
+vagrant@servidor:~$ mcli rm root/lab-bucket/anonimo.txt
+Removed `root/lab-bucket/anonimo.txt`.
+vagrant@servidor:~$ mcli anonymous set private root/lab-bucket
+Access permission for `root/lab-bucket` is set to `private`
+vagrant@servidor:~$ mcli anonymous get root/lab-bucket
+Access permission for `root/lab-bucket` is `private`
+vagrant@servidor:~$ mcli anonymous get-json root/lab-bucket
+{}
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' http://127.0.0.1:9000/lab-bucket/teste.txt
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>teste.txt</Key><BucketName>lab-b...
+HTTP 403
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:9000/lab-bucket/?list-type=2'
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><BucketName>lab-bucket</BucketName><R...
+HTTP 403
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' -X PUT --data-binary 'escrito por anonimo' http...
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>anonimo.txt</Key><BucketName>lab...
+HTTP 403

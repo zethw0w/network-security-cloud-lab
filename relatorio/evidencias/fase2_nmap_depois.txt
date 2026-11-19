@@ -1,0 +1,41 @@
+# fase2_nmap_depois.txt | host: cliente | script: fase2_scan.sh | 2026-11-19 15:02:46 -03
+
+### Varredura das portas de interesse (com detecção de versão)
+$ nmap -Pn -sS -sV --version-light -p 22,80,443,8080,9000,9001 192.168.50.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2026-11-19 15:02 -03
+Nmap scan report for 192.168.50.10
+Host is up (0.0013s latency).
+
+PORT     STATE    SERVICE    VERSION
+22/tcp   filtered ssh
+80/tcp   filtered http
+443/tcp  filtered https
+8080/tcp open     http       SimpleHTTPServer 0.6 (Python 3.10.12)
+9000/tcp filtered cslistener
+9001/tcp filtered tor-orport
+MAC Address: 08:00:27:50:00:10 (Oracle VirtualBox virtual NIC)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 7.57 seconds
+[código de saída: 0]
+
+### Varredura TCP completa (1-65535)
+$ nmap -Pn -sS -T4 --min-rate 1000 --max-retries 1 -p- 192.168.50.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2026-11-19 15:02 -03
+Nmap scan report for 192.168.50.10
+Host is up (0.00050s latency).
+Not shown: 65534 filtered ports
+PORT     STATE SERVICE
+8080/tcp open  http-proxy
+MAC Address: 08:00:27:50:00:10 (Oracle VirtualBox virtual NIC)
+
+Nmap done: 1 IP address (1 host up) scanned in 86.46 seconds
+[código de saída: 0]
+
+### Testes de aplicação
+$ curl -s -m 5 -o /dev/null -w 'HTTP %{http_code}\n' http://192.168.50.10:8080/
+HTTP 200
+[código de saída: 0]
+$ nc -zv -w 3 192.168.50.10 22
+nc: connect to 192.168.50.10 port 22 (tcp) timed out: Operation now in progress
+[código de saída: 1]

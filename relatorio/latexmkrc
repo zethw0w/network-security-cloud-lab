@@ -1,0 +1,5 @@
+# LuaLaTeX + BibTeX (abntex2cite). Também é respeitado pelo Overleaf.
+$pdf_mode = 4;
+$lualatex = 'lualatex -interaction=nonstopmode -file-line-error %O %S';
+$bibtex_use = 2;
+@default_files = ('main.tex');

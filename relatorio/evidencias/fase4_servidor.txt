@@ -1,0 +1,115 @@
+# fase4_servidor.txt | host: servidor | script: fase4_servidor.sh | 2026-11-19 15:04:51 -03
+
+### Alias do usuário de menor privilégio
+$ mcli --config-dir /root/.mcli-lab alias set labuser http://127.0.0.1:9000 lab-user $LAB_SECRET
+Added `labuser` successfully.
+[código de saída: 0]
+
+### Teste 1: política anônima do bucket é private
+$ mcli --config-dir /root/.mcli-lab anonymous get root/lab-bucket
+Access permission for `root/lab-bucket` is `private`
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: private)
+
+### Teste 2: download anônimo negado
+$ curl -s -w '\nHTTP %{http_code}\n' http://127.0.0.1:9000/lab-bucket/teste.txt
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>teste.txt</Key><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/teste.txt</Resource><RequestId>18E984641643BC3B</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+
+### Teste 3: listagem anônima negada
+$ curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:9000/lab-bucket/?list-type=2'
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/</Resource><RequestId>18E9846417FE703D</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+
+### Teste 4: upload anônimo negado
+$ curl -s -w '\nHTTP %{http_code}\n' -X PUT --data-binary 'teste' http://127.0.0.1:9000/lab-bucket/anonimo.txt
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>anonimo.txt</Key><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/anonimo.txt</Resource><RequestId>18E9846419B347AB</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+
+### Teste 5: lab-user lista o lab-bucket
+$ mcli --config-dir /root/.mcli-lab ls labuser/lab-bucket
+[2026-11-19 14:56:19 -03]     9B STANDARD gravado-pelo-lab-user.txt
+[2026-11-19 15:04:32 -03]    33B STANDARD teste.txt
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: teste.txt)
+
+### Teste 6: lab-user lê objeto do lab-bucket
+$ mcli --config-dir /root/.mcli-lab cat labuser/lab-bucket/teste.txt
+arquivo de teste do laboratório
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: arquivo de teste)
+
+### Teste 7: lab-user grava objeto no lab-bucket
+$ mcli --config-dir /root/.mcli-lab cp /etc/hostname labuser/lab-bucket/gravado-pelo-lab-user.txt
+`/etc/hostname` -> `labuser/lab-bucket/gravado-pelo-lab-user.txt`
+┌───────┬─────────────┬──────────┬─────────┐
+│ Total │ Transferred │ Duration │ Speed   │
+│ 9 B   │ 9 B         │ 00m00s   │ 388 B/s │
+└───────┴─────────────┴──────────┴─────────┘
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: -)
+
+### Teste 8: lab-user NÃO cria bucket
+$ mcli --config-dir /root/.mcli-lab mb labuser/bucket-nao-autorizado
+mcli: <ERROR> Unable to make bucket `labuser/bucket-nao-autorizado`. Access Denied.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Teste 9: lab-user NÃO lista o outro-bucket
+$ mcli --config-dir /root/.mcli-lab ls labuser/outro-bucket
+mcli: <ERROR> Unable to list folder. Access Denied.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Teste 10: lab-user NÃO lê objeto do outro-bucket
+$ mcli --config-dir /root/.mcli-lab cat labuser/outro-bucket/confidencial.txt
+mcli: <ERROR> Unable to read from `labuser/outro-bucket/confidencial.txt`. Insufficient permissions to access this path `http://127.0.0.1:9000/outro-bucket/confidencial.txt`.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Teste 11: lab-user NÃO apaga objeto (s3:DeleteObject não concedido)
+$ mcli --config-dir /root/.mcli-lab rm labuser/lab-bucket/teste.txt
+mcli: <ERROR> Failed to remove `labuser/lab-bucket/teste.txt`. Access Denied.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Teste 12: lab-user NÃO altera a política do bucket
+$ mcli --config-dir /root/.mcli-lab anonymous set public labuser/lab-bucket
+mcli: <ERROR> Unable to set anonymous `public` for `labuser/lab-bucket`. Access Denied.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Teste 13: lab-user NÃO executa ação administrativa
+$ mcli --config-dir /root/.mcli-lab admin user list labuser
+mcli: <ERROR> Unable to list user. Access Denied.
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+
+### Buckets visíveis para o lab-user
+$ mcli --config-dir /root/.mcli-lab ls labuser
+[2026-11-19 14:47:43 -03]     0B lab-bucket/
+[código de saída: 0]
+
+### Firewall do servidor
+$ ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+192.168.50.10 8080/tcp on eth1 ALLOW IN    192.168.50.20              # Fase 2: HTTP 8080 somente da VM cliente
+22/tcp on eth0             ALLOW IN    10.0.2.2                   # Gerencia Vagrant via NAT (fora da rede do lab)
+[código de saída: 0]
+
+### Resumo: 13 teste(s), 0 falha(s)

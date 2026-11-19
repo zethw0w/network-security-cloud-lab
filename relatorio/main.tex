@@ -1,0 +1,137 @@
+% !TEX program = lualatex
+% Relatório técnico — Network Security & Cloud Essentials
+% Modelo abnTeX2 (ABNT NBR 14724). Compile com LuaLaTeX:  latexmk  (usa o latexmkrc)
+% Trechos em vermelho [PREENCHER: ...] são para você completar.
+% As caixas "EVIDÊNCIA PENDENTE" somem quando os scripts do lab geram os arquivos em evidencias/.
+
+\documentclass[12pt,openright,oneside,a4paper,chapter=TITLE,section=TITLE,brazil]{abntex2}
+
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Termes}             % equivalente livre da Times New Roman
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\usepackage{amsmath}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fvextra}
+\usepackage{microtype}
+\usepackage[alf]{abntex2cite}
+
+% ---------------------------------------------------------------------------
+% Macros do modelo
+% ---------------------------------------------------------------------------
+\newcommand{\preencher}[1]{\textcolor{red}{[PREENCHER: #1]}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}   % coluna alinhada à esquerda
+\newcommand{\evidir}{evidencias}
+
+% Versão compacta (padrão) x completa: compile com -pretex='\def\completo{1}' para a completa.
+\newif\ifcompleto
+\ifdefined\completo\completotrue\fi
+
+\newcounter{evidencia}[chapter]
+\renewcommand{\theevidencia}{\thechapter.\arabic{evidencia}}
+
+% \evidencia{arquivo.txt}{legenda} — insere a saída gravada pelos scripts do laboratório
+\newcommand{\evidencia}[2]{%
+  \par\medskip\refstepcounter{evidencia}%
+  \begin{center}\small\textbf{Evidência \theevidencia} --- #2\end{center}\vspace{-0.6\baselineskip}%
+  \IfFileExists{\evidir/#1}{%
+    \VerbatimInput[fontsize=\scriptsize,breaklines,breakanywhere,frame=single,framesep=2mm]{\evidir/#1}%
+  }{%
+    \noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\centering\small
+      \textcolor{red}{\textbf{EVIDÊNCIA PENDENTE:} \texttt{\evidir/\detokenize{#1}}}\\
+      Execute o script correspondente do laboratório (ver Anexo~\ref{anexo:roteiro}).}}%
+  }%
+  \par\smallskip{\centering\footnotesize Fonte: elaborado pelo autor (\texttt{\detokenize{#1}}).\par}\medskip}
+
+% \evidenciaextra: saída automática dos scripts que repete um print manual; só na versão completa
+\newcommand{\evidenciaextra}[2]{\ifcompleto\evidencia{#1}{#2}\fi}
+
+% \printtela{arquivo}{legenda} — insere um print de tela de figuras/ (opcional)
+% \evidenciaresumo: versão compacta usa evidencias/r_<arquivo> (só títulos e vereditos, ou linhas truncadas)
+\newcommand{\evidenciaresumo}[2]{\ifcompleto\evidencia{#1}{#2}\else\evidencia{r_#1}{#2 (resumo)}\fi}
+
+\newcommand{\printw}{0.62}   % largura dos prints (fração da largura do texto)
+\newcommand{\printtela}[2]{%
+  \begin{figure}[htbp]\centering
+    \caption{#2}
+    \IfFileExists{figuras/#1}{\includegraphics[width=\printw\textwidth]{figuras/#1}}{%
+      \fbox{\parbox{0.8\textwidth}{\centering\textcolor{red}{PRINT PENDENTE: figuras/\detokenize{#1}}}}}
+    \legend{Fonte: elaborado pelo autor.}
+  \end{figure}}
+
+% ---------------------------------------------------------------------------
+% Dados do trabalho
+% ---------------------------------------------------------------------------
+\titulo{Segurança de Rede e Fundamentos de Nuvem:\\ endereçamento, filtragem de tráfego, IAM e armazenamento em laboratório controlado}
+\autor{Eric Kinoshita \\ RM559216}
+\local{}
+\data{2026}
+\instituicao{Network Security \& Cloud Essentials}
+\tipotrabalho{Relatório técnico}
+\preambulo{Relatório técnico apresentado à disciplina Network Security \& Cloud Essentials, como requisito parcial de avaliação.}
+\orientador{}
+
+% Capa conforme NBR 14724: instituição, autor, título, local e ano
+\renewcommand{\imprimircapa}{%
+  \begin{capa}\center
+    {\ABNTEXchapterfont\large\imprimirinstituicao\par}
+    \vspace{2cm}
+    {\ABNTEXchapterfont\large\imprimirautor\par}
+    \vfill
+    {\ABNTEXchapterfont\bfseries\LARGE\imprimirtitulo}
+    \vfill
+    \large\imprimirlocal\par
+    \large\imprimirdata
+    \vspace*{1cm}
+  \end{capa}}
+
+% Folha de rosto (NBR 14724) sem a linha de orientador
+\renewcommand{\imprimirfolhaderosto}{%
+  \begin{folhaderosto}
+    \begin{center}{\ABNTEXchapterfont\large\imprimirautor}\end{center}
+    \vfill
+    \begin{center}{\ABNTEXchapterfont\bfseries\Large\imprimirtitulo}\end{center}
+    \vfill
+    \hspace{.45\textwidth}\begin{minipage}{.5\textwidth}\SingleSpacing\imprimirpreambulo\end{minipage}
+    \vfill
+    \begin{center}{\large\imprimirinstituicao}\par{\large\imprimirdata}\end{center}
+  \end{folhaderosto}}
+
+\makeatletter
+\hypersetup{pdftitle={\@title}, pdfauthor={\@author}, pdfsubject={Network Security & Cloud Essentials},
+  colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue, bookmarksdepth=4}
+\makeatother
+
+\makeindex
+
+\begin{document}
+\selectlanguage{brazil}
+\frenchspacing
+
+% ----------------------------- Pré-textuais --------------------------------
+\imprimircapa
+\imprimirfolhaderosto   % obrigatória pela NBR 14724
+
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+% ------------------------------- Textuais ----------------------------------
+\textual
+\input{capitulos/01-introducao}
+\input{capitulos/02-desenvolvimento}
+\input{capitulos/03-resultados}
+\input{capitulos/04-conclusao}
+
+% ----------------------------- Pós-textuais --------------------------------
+\postextual
+\bibliography{referencias}
+
+% O enunciado pede "Anexos". Pela NBR 14724, material elaborado pelo próprio autor
+% seria "Apêndice"; troque anexosenv por apendicesenv se o professor preferir.
+\begin{anexosenv}
+\input{anexos/anexos}
+\end{anexosenv}
+
+\end{document}

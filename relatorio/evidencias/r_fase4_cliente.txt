@@ -1,0 +1,13 @@
+# fase4_cliente.txt | host: cliente | script: fase4_cliente.sh | 2026-11-19 15:04:57 -03
+### Varredura das portas de interesse
+### Teste 1: varredura TCP completa encontra somente: 8080
+=> RESULTADO: PASSOU (portas abertas: 8080; esperado: 8080)
+### Teste 2: HTTP 8080 responde ao cliente
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 200)
+### Teste 3: SSH (22) bloqueado para o cliente
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+### Teste 4: API S3 (9000) bloqueada para o cliente
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+### Teste 5: console do SILO (9001) bloqueado para o cliente
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+### Resumo: 5 teste(s), 0 falha(s)

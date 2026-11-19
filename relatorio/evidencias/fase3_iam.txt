@@ -1,0 +1,115 @@
+# fase3_iam.txt | host: servidor | script: fase3_silo.sh | 2026-11-19 15:04:30 -03
+
+### Instalação do SILO 20261112000000.0.0 e do mcli
+$ silo --version
+silo version RELEASE.2026-11-12T00-00-00Z (commit-id=44e848fedf8cec3d8c0da4b1aa8422390a2b7a8b)
+Runtime: go1.27.4 linux/amd64
+License: GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html
+Copyright: 2015-2025 MinIO, Inc.
+Modifications: Copyright 2025-2026 PGSTY
+Source compatibility: based on MinIO technology
+[código de saída: 0]
+$ mcli --version
+mcli version RELEASE.2026-11-12T00-00-00Z (commit-id=a37a9f054fba828a0bbbceb4e9ff247ccf09c28d)
+Silo object storage client, based on MinIO technology
+Runtime: go1.27.4 linux/amd64
+Copyright (c) 2015-2025 MinIO, Inc.
+Copyright (c) 2025-2026 PGSTY
+License GNU AGPLv3 <https://www.gnu.org/licenses/agpl-3.0.html>
+[código de saída: 0]
+
+### Serviço
+$ cat /etc/systemd/system/silo-lab.service
+[Unit]
+Description=Laboratorio - SILO (armazenamento S3) em :9000, console em :9001
+After=network-online.target
+
+[Service]
+User=silo-lab
+Group=silo-lab
+EnvironmentFile=/etc/silo-lab.env
+ExecStart=/usr/bin/silo server /var/lib/silo-lab --address :9000 --console-address :9001
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+[código de saída: 0]
+$ systemctl daemon-reload && systemctl enable --now silo-lab
+
+[código de saída: 0]
+$ curl -s -o /dev/null -w 'health: HTTP %{http_code}\n' http://127.0.0.1:9000/minio/health/live
+health: HTTP 200
+[código de saída: 0]
+$ ss -tlnp | grep -E ':(9000|9001) '
+LISTEN 0      4096       127.0.0.1:9000      0.0.0.0:*    users:(("silo",pid=7691,fd=4))           
+LISTEN 0      4096               *:9001            *:*    users:(("silo",pid=7691,fd=9))           
+LISTEN 0      4096               *:9000            *:*    users:(("silo",pid=7691,fd=7))           
+LISTEN 0      4096           [::1]:9000         [::]:*    users:(("silo",pid=7691,fd=8))           
+[código de saída: 0]
+
+### Buckets
+$ mcli --config-dir /root/.mcli-lab alias set root http://127.0.0.1:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+Added `root` successfully.
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab mb --ignore-existing root/lab-bucket root/outro-bucket
+Bucket created successfully `root/lab-bucket`.
+Bucket created successfully `root/outro-bucket`.
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab cp /tmp/teste.txt root/lab-bucket/teste.txt
+`/tmp/teste.txt` -> `root/lab-bucket/teste.txt`
+┌───────┬─────────────┬──────────┬────────────┐
+│ Total │ Transferred │ Duration │ Speed      │
+│ 33 B  │ 33 B        │ 00m00s   │ 1.35 KiB/s │
+└───────┴─────────────┴──────────┴────────────┘
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab cp /tmp/teste.txt root/outro-bucket/confidencial.txt
+`/tmp/teste.txt` -> `root/outro-bucket/confidencial.txt`
+┌───────┬─────────────┬──────────┬────────────┐
+│ Total │ Transferred │ Duration │ Speed      │
+│ 33 B  │ 33 B        │ 00m00s   │ 2.32 KiB/s │
+└───────┴─────────────┴──────────┴────────────┘
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab ls root
+[2026-11-19 14:47:43 -03]     0B lab-bucket/
+[2026-11-19 14:47:43 -03]     0B outro-bucket/
+[código de saída: 0]
+
+### Política de menor privilégio e usuário
+$ cat /vagrant/lab/politica-lab-rw.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListarSomenteOLabBucket",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": ["arn:aws:s3:::lab-bucket"]
+    },
+    {
+      "Sid": "LerEGravarObjetosDoLabBucket",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": ["arn:aws:s3:::lab-bucket/*"]
+    }
+  ]
+}
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab admin policy create root lab-rw /vagrant/lab/politica-lab-rw.json
+Created policy `lab-rw` successfully.
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab admin user add root lab-user $LAB_SECRET
+Added user `lab-user` successfully.
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab admin policy attach root lab-rw --user lab-user || true
+Attached Policies: [lab-rw]
+To User: lab-user
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab admin user info root lab-user
+AccessKey: lab-user
+Status: enabled
+PolicyName: lab-rw
+MemberOf: []
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab admin policy info root lab-rw
+{"PolicyName":"lab-rw","Policy":{"Version":"2012-10-17","Statement":[{"Sid":"ListarSomenteOLabBucket","Effect":"Allow","Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":["arn:aws:s3:::lab-bucket"]},{"Sid":"LerEGravarObjetosDoLabBucket","Effect":"Allow","Action":["s3:GetObject","s3:PutObject"],"Resource":["arn:aws:s3:::lab-bucket/*"]}]},"CreateDate":"2026-11-19T17:47:43.638Z","UpdateDate":"2026-11-19T18:04:32.815Z"}
+[código de saída: 0]

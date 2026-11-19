@@ -1,0 +1,285 @@
+\chapter{Desenvolvimento}\label{cap:desenvolvimento}
+
+O ambiente foi criado com Vagrant sobre o VirtualBox (\texttt{Vagrantfile} no
+Anexo~\ref{anexo:roteiro}). Cada VM possui dois adaptadores: o primeiro, em NAT, serve
+apenas para instalação de pacotes e para a gerência pelo comando \texttt{vagrant ssh}; o
+segundo está ligado à rede interna \texttt{lab-net}, que não tem comunicação com o
+hospedeiro nem com a rede local, e é a única rede do laboratório. A
+\autoref{tab:topologia} resume a topologia.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Topologia do laboratório}\label{tab:topologia}
+  \begin{tabular}{llll}
+    \hline
+    \textbf{VM} & \textbf{Papel} & \textbf{Endereço (Fase 1, /24)} & \textbf{Endereço (/26)} \\
+    \hline
+    servidor & HTTP 8080, SSH, SILO & 192.168.50.10/24 & 192.168.50.10/26 \\
+    cliente  & origem dos testes, \texttt{nmap} & 192.168.50.20/24 & 192.168.50.20/26 \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+% ===========================================================================
+\section{Endereçamento e segmentação}\label{sec:enderecamento}
+
+\subsection{Configuração de IP estático}
+
+O endereço estático foi definido com o Netplan \cite{netplan-docs}, gravando o arquivo
+\texttt{/etc/netplan/60-lab.yaml} na interface da rede interna e aplicando-o com
+\texttt{netplan apply}. As evidências a seguir mostram o arquivo e o estado resultante
+das interfaces.
+
+\evidenciaextra{fase1_ip_servidor_24.txt}{IP estático do servidor (/24)}
+\evidenciaextra{fase1_ip_cliente_24.txt}{IP estático do cliente (/24)}
+
+A comunicação foi confirmada a partir do cliente com \texttt{ping} e com uma sessão
+\texttt{ssh} autenticada por chave, que executa comandos no servidor.
+
+\evidenciaextra{fase1_conectividade_24.txt}{Conectividade cliente $\rightarrow$ servidor na rede /24}
+
+\printtela{fase1-conectividade-24.png}{Execução manual no cliente: IP 192.168.50.20/24, \texttt{ping} sem perdas e \texttt{ssh} ao servidor}
+
+\subsection{Cálculo das sub-redes /26}
+
+Na rede 192.168.50.0/24 os 24 primeiros bits identificam a rede e os 8 restantes os
+\textit{hosts} \cite{rfc950,rfc4632}. Passar para /26 significa emprestar 2 bits da parte
+de \textit{host}, o que gera $2^2 = 4$ sub-redes de $2^6 = 64$ endereços cada. Descontados
+o endereço de rede e o de \textit{broadcast}, restam $64 - 2 = 62$ \textit{hosts} úteis por
+sub-rede. A nova máscara é:
+\[
+  /26 = \underbrace{11111111.11111111.11111111.11}_{26\ \text{bits}}000000 = 255.255.255.192
+\]
+O tamanho do bloco é $256 - 192 = 64$, de modo que as sub-redes começam nos múltiplos de 64
+do último octeto (\autoref{tab:subredes}).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Divisão de 192.168.50.0/24 em sub-redes /26}\label{tab:subredes}
+  \begin{tabular}{clllc}
+    \hline
+    \textbf{Sub-rede} & \textbf{Endereço de rede} & \textbf{Faixa de hosts} & \textbf{Broadcast} & \textbf{Hosts} \\
+    \hline
+    A & 192.168.50.0/26   & .1 -- .62    & 192.168.50.63  & 62 \\
+    B & 192.168.50.64/26  & .65 -- .126  & 192.168.50.127 & 62 \\
+    C & 192.168.50.128/26 & .129 -- .190 & 192.168.50.191 & 62 \\
+    D & 192.168.50.192/26 & .193 -- .254 & 192.168.50.255 & 62 \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+O enunciado pede duas sub-redes /26; foram utilizadas a A (servidor .10 e cliente .20) e
+a B (usada no teste de segmentação). Vale observar que dividir a /24 em exatamente duas
+metades exigiria máscara /25 (126 \textit{hosts} cada); com /26, as duas sub-redes usadas
+ocupam metade do espaço e as sub-redes C e D ficam reservadas para crescimento. O cálculo
+foi conferido com a biblioteca \texttt{ipaddress} do Python:
+
+\evidencia{fase1_subredes.txt}{Cálculo das sub-redes /26 conferido com \texttt{ipaddress}}
+
+\subsection{Aplicação da máscara /26 e teste de segmentação}
+
+As duas VMs foram reconfiguradas para /26, permanecendo na sub-rede A, e a comunicação
+foi testada novamente.
+
+\evidenciaextra{fase1_ip_servidor_26.txt}{Servidor reconfigurado para /26}
+\evidenciaextra{fase1_ip_cliente_26.txt}{Cliente reconfigurado para /26}
+
+\printtela{fase1-servidor-24-26.png}{Execução manual no servidor: IP 192.168.50.10/24 e, em seguida, /26 com a rota 192.168.50.0/26}
+\printtela{fase1-cliente-26.png}{Execução manual no cliente: passagem de 192.168.50.20/24 para /26 e rota 192.168.50.0/26}
+\evidenciaextra{fase1_conectividade_26.txt}{Conectividade cliente $\rightarrow$ servidor na sub-rede A (/26)}
+
+\printtela{fase1-conectividade-26.png}{Execução manual no cliente: \texttt{ping} e \texttt{ssh} ao servidor na sub-rede A (/26)}
+
+Para demonstrar o efeito da segmentação, o cliente foi movido temporariamente para a
+sub-rede B (192.168.50.70/26). Como não existe roteador entre A e B, o sistema não tem
+rota para o servidor pela interface do laboratório e o \texttt{ping} falha; em seguida o
+cliente foi devolvido à sub-rede A.
+
+\evidenciaextra{fase1_segmentacao.txt}{Cliente na sub-rede B não alcança o servidor na sub-rede A}
+
+\printtela{fase1-segmentacao.png}{Execução manual no cliente: em 192.168.50.70/26 (sub-rede B) a rota para o servidor sai pela NAT e o \texttt{ping} pela interface do lab tem 100\% de perda}
+
+% ===========================================================================
+\section{Configuração do firewall e varredura de portas}\label{sec:firewall}
+
+\subsection{Serviços publicados no servidor}
+
+O servidor web foi executado como serviço do \textit{systemd} com
+\texttt{python3 -m http.server 8080} \cite{python-httpserver}, com usuário dinâmico sem
+privilégios (\texttt{DynamicUser=yes}); o SSH é o OpenSSH padrão do Ubuntu.
+
+\evidenciaextra{fase2_servicos.txt}{Serviços HTTP (8080) e SSH (22) ativos no servidor}
+
+\printtela{fase2-servicos.png}{Execução manual no servidor: \texttt{python3 -m http.server 8080} em segundo plano, SSH ativo e as portas 22 e 8080 em escuta}
+
+\subsection{Varredura antes do firewall}
+
+A partir do cliente foram feitas duas varreduras TCP SYN com \texttt{nmap}
+\cite{lyon2009nmap}: uma nas portas de interesse com detecção de versão e outra em todas as
+65.535 portas. Sem \textit{firewall}, as portas 22 e 8080 aparecem como \emph{open}.
+
+\evidenciaextra{fase2_nmap_antes.txt}{\texttt{nmap} do cliente contra o servidor, antes do firewall}
+
+\printtela{fase2-nmap-antes.png}{Execução manual no cliente: \texttt{nmap} antes do firewall, com 22/tcp e 8080/tcp abertas e 65.533 portas fechadas}
+
+\subsection{Regras de filtragem}
+
+O \texttt{ufw} \cite{ufw-docs} foi configurado com política padrão de negar todo tráfego
+de entrada e uma única regra de liberação, restrita em quatro dimensões: interface do
+laboratório, origem (192.168.50.20), destino (192.168.50.10) e porta/protocolo
+(8080/TCP). Isso segue a recomendação de negar por padrão e liberar apenas o
+estritamente necessário \cite{nist80041}. Com essa política o SSH fica bloqueado para
+qualquer origem da rede do laboratório.
+
+Duas observações de projeto:
+\begin{alineas}
+  \item o adaptador NAT do Vagrant não faz parte da rede do laboratório, e bloquear tudo
+    nele impediria a própria gerência da VM. Por isso foi criada uma exceção apenas para a
+    porta 22 vinda do hospedeiro pela NAT (10.0.2.2), registrada com comentário na regra.
+    Essa exceção não é visível a partir do cliente;
+  \item o enunciado da Fase 2 pode ser lido como ``SSH permitido somente a partir do
+    cliente'', mas a Fase 4 exige que \emph{somente} a porta 8080 esteja acessível a partir
+    do cliente. Adotou-se a leitura da Fase 4; o \textit{script} aceita
+    \texttt{PERMITIR\_SSH\_CLIENTE=1} para a leitura alternativa.
+\end{alineas}
+
+\evidenciaextra{fase2_firewall.txt}{Regras do \texttt{ufw} aplicadas no servidor}
+
+\printtela{fase2-firewall.png}{Execução manual no servidor: regras do \texttt{ufw} e \texttt{ufw status verbose} com entrada negada por padrão e somente 8080/TCP liberada para o cliente}
+
+No \texttt{ufw status verbose}, a política de roteamento aparece como \emph{disabled}
+porque o encaminhamento de pacotes (\texttt{net.ipv4.ip\_forward}) está desligado no
+servidor: ele não atua como roteador, e o tráfego roteado é negado de qualquer forma.
+A saída do \texttt{iptables} confirma que a regra de liberação ficou restrita à interface
+\texttt{eth1}, à origem 192.168.50.20, ao destino 192.168.50.10 e à porta 8080/TCP.
+
+\subsection{Varredura depois do firewall}
+
+Repetidas as varreduras, apenas a porta 8080 continua \emph{open}; as demais passam a
+\emph{filtered}, pois os pacotes são descartados sem resposta.
+
+\evidenciaextra{fase2_nmap_depois.txt}{\texttt{nmap} do cliente contra o servidor, depois do firewall}
+
+\printtela{fase2-nmap-depois.png}{Execução manual no cliente: \texttt{nmap} depois do firewall, com somente 8080/tcp aberta e 65.534 portas filtradas (22/tcp passou de \emph{open} para \emph{filtered}); \texttt{curl} na 8080 responde HTTP 200 e \texttt{nc} na 22 expira}
+
+% ===========================================================================
+\section{Configuração de IAM e armazenamento em nuvem}\label{sec:iam}
+
+\subsection{Plataforma utilizada}
+
+Optou-se pela simulação local permitida pelo enunciado. O servidor e o cliente oficiais
+do MinIO deixaram de ser distribuídos (o endereço oficial de \textit{download} responde
+``410 Gone'') \cite{minio-arquivado}; por isso foi usado o SILO \cite{silo-docs}, versão
+\texttt{RELEASE.2026-11-12}, instalado a partir dos pacotes oficiais do projeto com
+verificação de SHA-256. O SILO mantém a API S3, a API de administração, as variáveis
+\texttt{MINIO\_*} e os comandos do cliente (\texttt{mcli}), de modo que os conceitos e
+comandos são os mesmos do MinIO. O serviço escuta na porta 9000 (API S3) e 9001 (console),
+ambas bloqueadas para a rede pelo \textit{firewall} da \autoref{sec:firewall}; a
+administração foi feita localmente no servidor.
+
+As credenciais de administrador e do usuário de laboratório foram geradas aleatoriamente
+na própria VM, gravadas em arquivos com permissão 600 e nunca aparecem nas evidências
+(os comandos registram apenas o nome da variável, como \texttt{\$LAB\_SECRET}).
+
+\subsection{Usuário e política de menor privilégio}
+
+Foram criados dois \textit{buckets}: \texttt{lab-bucket}, ao qual o usuário terá acesso,
+e \texttt{outro-bucket}, usado para provar que o acesso não se estende a outros recursos.
+A política \texttt{lab-rw} concede somente o necessário para ``ler e escrever'' no
+\texttt{lab-bucket} (\autoref{tab:politica}), aplicando o princípio do menor privilégio
+\cite{nist80053}. Não há curingas de ação, não há permissão administrativa, e mesmo a
+exclusão de objetos ficou de fora por não ser exigida pelo enunciado.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Permissões da política \texttt{lab-rw}}\label{tab:politica}
+  \begin{tabular}{L{0.3\textwidth}L{0.36\textwidth}L{0.24\textwidth}}
+    \hline
+    \textbf{Ação} & \textbf{Recurso} & \textbf{Finalidade} \\
+    \hline
+    \texttt{s3:ListBucket}, \texttt{s3:GetBucketLocation} & \texttt{arn:aws:s3:::lab-bucket} & listar o conteúdo do \textit{bucket} \\
+    \texttt{s3:GetObject} & \texttt{arn:aws:s3:::lab-bucket/*} & ler objetos \\
+    \texttt{s3:PutObject} & \texttt{arn:aws:s3:::lab-bucket/*} & gravar objetos \\
+    \hline
+    \multicolumn{3}{L{0.9\textwidth}}{\footnotesize Não concedido: criar ou remover \textit{buckets}, apagar objetos, alterar políticas, acessar outros \textit{buckets} e qualquer ação \texttt{admin:*}.} \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+\printtela{fase3-silo-versao.png}{Execução manual no servidor: SILO e \texttt{mcli} instalados, versão \texttt{RELEASE.2026-11-12T00-00-00Z}}
+\printtela{fase3-silo-servico.png}{Execução manual no servidor: senha gerada aleatoriamente em arquivo privado, SILO no ar (\texttt{health: HTTP 200}) e alias administrativo \texttt{root} configurado}
+
+\printtela{fase3-buckets.png}{Execução manual no servidor: criação dos \textit{buckets} \texttt{lab-bucket} e \texttt{outro-bucket} e envio dos arquivos de teste}
+
+\printtela{fase3-iam.png}{Execução manual no servidor: política \texttt{lab-rw} (somente \texttt{lab-bucket}), criação do \texttt{lab-user} e vínculo da política (\texttt{PolicyName: lab-rw})}
+
+\evidenciaextra{fase3_iam.txt}{Instalação do SILO, criação dos buckets, da política \texttt{lab-rw} e do usuário \texttt{lab-user}}
+
+\subsection{Bucket público e correção para privado}
+
+Primeiro o \texttt{lab-bucket} foi deliberadamente tornado público com
+\texttt{mcli anonymous set public}. Isso anexa ao \textit{bucket} uma política com
+\texttt{"Principal": \{"AWS": ["*"]\}} e as ações de leitura, listagem, gravação e até
+exclusão de objetos (\texttt{s3:DeleteObject}), ou seja, qualquer pessoa sem credenciais
+pode listar, baixar, gravar e apagar objetos. As requisições \texttt{curl} sem assinatura
+da evidência a seguir confirmam leitura, listagem e gravação anônimas.
+
+\evidenciaextra{fase3_bucket_publico.txt}{\textit{Bucket} público: acesso anônimo de leitura, listagem e escrita}
+
+\evidenciaresumo{manual_fase3_bucket_publico.txt}{Execução manual: \textit{bucket} público, com leitura, listagem e escrita anônimas (HTTP 200)}
+
+Em seguida o \textit{bucket} foi corrigido com \texttt{mcli anonymous set private}, que
+remove a política anônima. As mesmas requisições passam a receber \texttt{403 AccessDenied}.
+
+\evidenciaextra{fase3_bucket_privado.txt}{\textit{Bucket} privado: acesso anônimo negado}
+
+\evidenciaresumo{manual_fase3_bucket_privado.txt}{Execução manual: \textit{bucket} corrigido para privado, com as mesmas tentativas anônimas negadas (HTTP 403)}
+
+A \autoref{tab:publico-privado} resume a diferença entre as duas configurações.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Diferença entre as configurações pública e privada}\label{tab:publico-privado}
+  \begin{tabular}{L{0.3\textwidth}L{0.3\textwidth}L{0.3\textwidth}}
+    \hline
+    \textbf{Aspecto} & \textbf{Público} & \textbf{Privado} \\
+    \hline
+    Comando & \texttt{anonymous set public} & \texttt{anonymous set private} \\
+    Política do \textit{bucket} (\texttt{get-json}) & \texttt{Allow} para \texttt{Principal "*"}: leitura, listagem, gravação e exclusão & \texttt{\{\}} (nenhuma política anônima) \\
+    \texttt{GET} anônimo de objeto & HTTP 200 (conteúdo retornado) & HTTP 403 \texttt{AccessDenied} \\
+    Listagem anônima & HTTP 200 (\texttt{ListBucketResult}) & HTTP 403 \texttt{AccessDenied} \\
+    \texttt{PUT} anônimo & HTTP 200 (objeto gravado) & HTTP 403 \texttt{AccessDenied} \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor, a partir das Evidências da \autoref{sec:iam}.}
+\end{table}
+
+% ===========================================================================
+\section{Testes de verificação final}\label{sec:verificacao}
+
+A verificação final repete os testes das fases anteriores com critérios explícitos de
+aprovação: cada teste registra o resultado esperado e o veredito
+(\texttt{PASSOU}/\texttt{FALHOU}), calculado pelo próprio \textit{script} a partir do
+código de saída e do conteúdo da resposta.
+
+\subsection{Portas acessíveis a partir do cliente}
+
+\evidenciaresumo{fase4_cliente.txt}{Verificação a partir do cliente: somente a 8080 acessível}
+
+\evidenciaextra{manual_fase4_cliente.txt}{Execução manual: varredura final com o SILO em execução no servidor, somente 8080/tcp aberta}
+
+\printtela{fase4-cliente.png}{Execução manual no cliente: varredura final com 9000/9001 (SILO) \emph{filtered}, HTTP 200 na 8080, \emph{timeout} no SSH (22) e na API S3 (9000, código 28)}
+
+\subsection{Bucket sem acesso público e usuário restrito}
+
+Os testes de acesso anônimo e do usuário \texttt{lab-user} foram executados no próprio
+servidor, contra a API local, já que a porta 9000 está bloqueada para a rede. Foram
+testadas ações dentro do escopo da política (que devem funcionar) e seis ações fora dele
+(que devem ser negadas).
+
+\evidenciaresumo{fase4_servidor.txt}{Verificação no servidor: \textit{bucket} privado e \texttt{lab-user} limitado à política}
+
+\printtela{fase4-servidor.png}{Execução manual no servidor: \textit{bucket} \texttt{private} (HTTP 403 anônimo); \texttt{lab-user} lista, lê e grava no \texttt{lab-bucket} e tem negadas as seis ações fora do escopo}

@@ -1,0 +1,46 @@
+# manual_fase3_bucket_publico.txt | host: servidor | execução manual | 2026-11-19
+vagrant@servidor:~$ mcli anonymous set public root/lab-bucket
+Access permission for `root/lab-bucket` is set to `public`
+vagrant@servidor:~$ mcli anonymous get root/lab-bucket
+Access permission for `root/lab-bucket` is `public`
+vagrant@servidor:~$ mcli anonymous get-json root/lab-bucket
+{
+ "Statement": [
+  {
+   "Action": [
+    "s3:DeleteObject",
+    "s3:GetObject",
+    "s3:PutObject"
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": [
+     "*"
+   },
+   "Resource": [
+    "arn:aws:s3:::lab-bucket/*"
+  },
+  {
+   "Action": [
+    "s3:GetBucketLocation",
+    "s3:ListBucket",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": [
+     "*"
+   },
+   "Resource": [
+    "arn:aws:s3:::lab-bucket"
+  }
+ "Version": "2012-10-17"
+}
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' http://127.0.0.1:9000/lab-bucket/teste.txt
+arquivo de teste do laboratório
+
+HTTP 200
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:9000/lab-bucket/?list-type=2'
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>lab-bucket</Name><Prefix></Pre...
+HTTP 200
+vagrant@servidor:~$ curl -s -w '\nHTTP %{http_code}\n' -X PUT --data-binary 'escrito por anonimo' http...
+
+HTTP 200

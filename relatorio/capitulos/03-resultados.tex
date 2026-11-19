@@ -1,0 +1,77 @@
+\chapter{Resultados e discussão}
+
+A \autoref{tab:criterios} relaciona cada critério de avaliação do enunciado com o
+resultado obtido e a evidência correspondente.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Critérios de avaliação e resultados}\label{tab:criterios}
+  \begin{tabular}{L{0.3\textwidth}L{0.38\textwidth}L{0.2\textwidth}}
+    \hline
+    \textbf{Critério} & \textbf{Resultado} & \textbf{Evidência} \\
+    \hline
+    Cálculo de sub-redes e configuração de IP & 4 sub-redes /26 de 62 \textit{hosts}; VMs na sub-rede A; cliente na sub-rede B isolado do servidor & \autoref{sec:enderecamento} \\
+    Efetividade do \textit{firewall} & antes: 22/tcp e 8080/tcp abertas; depois: somente 8080/tcp (65.534 portas filtradas) & \autoref{sec:firewall} \\
+    Menor privilégio no IAM & \texttt{lab-user} lê, lista e grava só no \texttt{lab-bucket}; as 6 ações testadas fora do escopo foram negadas & \autoref{sec:iam}, \autoref{sec:verificacao} \\
+    Armazenamento privado & acesso anônimo (leitura, listagem e escrita) passou de HTTP 200 para HTTP 403 & \autoref{sec:iam} \\
+    Evidência completa da Fase 4 & 18 testes (13 no servidor e 5 no cliente), nenhuma falha & \autoref{sec:verificacao} \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+\section{Defesa em profundidade}
+
+O laboratório mostra dois controles independentes protegendo o mesmo dado. Mesmo com o
+\textit{bucket} público, a API S3 do SILO não era alcançável pelo cliente, porque o
+\textit{firewall} só libera a porta 8080. Por outro lado, se a regra de \textit{firewall}
+fosse relaxada, a política do \textit{bucket} e do usuário continuariam negando o acesso
+indevido. Filtragem de rede responde \emph{quem alcança o serviço}; IAM responde
+\emph{quem pode fazer o quê em qual recurso}. Um não substitui o outro.
+
+\section{Equivalência com provedores de nuvem}
+
+Os conceitos exercitados têm correspondência direta nos provedores públicos, o que
+permite transpor o laboratório para uma conta real (\autoref{tab:nuvem})
+\cite{nist800145,aws-s3-bpa}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Correspondência entre o laboratório e a AWS}\label{tab:nuvem}
+  \begin{tabular}{L{0.42\textwidth}L{0.48\textwidth}}
+    \hline
+    \textbf{Laboratório} & \textbf{AWS} \\
+    \hline
+    Sub-redes /26 em 192.168.50.0/24 & VPC com sub-redes \\
+    \texttt{ufw} no servidor & \textit{Security Group} / \textit{Network ACL} \\
+    Usuário \texttt{lab-user} + política \texttt{lab-rw} & Usuário ou \textit{role} do IAM + política gerenciada \\
+    \texttt{mcli anonymous set public/private} & \textit{Bucket policy} com \texttt{Principal "*"} e \textit{S3 Block Public Access} \\
+    \hline
+  \end{tabular}
+  \legend{Fonte: elaborado pelo autor.}
+\end{table}
+
+\section{Limitações}
+
+\begin{alineas}
+  \item a política de saída do \texttt{ufw} foi mantida como ``permitir'', pois o enunciado
+    trata apenas do tráfego de entrada; em produção, a saída também deveria ser restrita;
+  \item a exceção de gerência do Vagrant (porta 22 pela NAT, a partir do hospedeiro) existe
+    apenas por causa da ferramenta de automação e não é alcançável pela rede do laboratório;
+  \item os testes de acesso anônimo ao \textit{bucket} foram feitos a partir do próprio
+    servidor, porque a rede bloqueia a porta 9000; isso isola o teste do controle de IAM
+    do teste do controle de rede;
+  \item o SILO é um \textit{fork} comunitário; em uma conta de nuvem real, o mesmo roteiro
+    usaria IAM e S3 nativos do provedor.
+\end{alineas}
+
+\section{Observações da execução}
+
+A varredura completa das 65.535 portas levou cerca de 26 segundos antes do
+\textit{firewall} e cerca de 86 segundos depois. A diferença se explica pelo
+comportamento de cada estado: uma porta \emph{fechada} responde imediatamente com um
+pacote de recusa (\texttt{RST}), enquanto uma porta \emph{filtrada} não responde, e o
+\texttt{nmap} precisa esperar o tempo limite de cada tentativa. Do ponto de vista de quem
+varre, o \textit{firewall} portanto não só esconde os serviços como encarece o
+reconhecimento da rede. O mesmo efeito aparece nos testes de aplicação: a conexão à
+porta 22 expira por \textit{timeout}, em vez de ser recusada.

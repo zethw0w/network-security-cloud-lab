@@ -1,0 +1,17 @@
+.vagrant/
+lab/.chaves/
+relatorio/*.aux
+relatorio/*.bbl
+relatorio/*.blg
+relatorio/*.brf
+relatorio/*.fdb_latexmk
+relatorio/*.fls
+relatorio/*.idx
+relatorio/*.ilg
+relatorio/*.ind
+relatorio/*.lof
+relatorio/*.log
+relatorio/*.lot
+relatorio/*.out
+relatorio/*.toc
+relatorio/*.synctex.gz

@@ -1,0 +1,33 @@
+# fase3_bucket_publico.txt | host: servidor | script: fase3_bucket.sh | 2026-11-19 15:04:39 -03
+
+### Configuração de acesso anônimo: publico
+$ mcli --config-dir /root/.mcli-lab anonymous set public root/lab-bucket
+Access permission for `root/lab-bucket` is set to `public`
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab anonymous get root/lab-bucket
+Access permission for `root/lab-bucket` is `public`
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab anonymous get-json root/lab-bucket
+{"Statement":[{"Action":["s3:AbortMultipartUpload","s3:DeleteObject","s3:GetObject","s3:ListMultipartUploadParts","s3:PutObject"],"Effect":"Allow","Principal":{"AWS":["*"]},"Resource":["arn:aws:s3:::lab-bucket/*"]},{"Action":["s3:GetBucketLocation","s3:ListBucket","s3:ListBucketMultipartUploads"],"Effect":"Allow","Principal":{"AWS":["*"]},"Resource":["arn:aws:s3:::lab-bucket"]}],"Version":"2012-10-17"}
+[código de saída: 0]
+
+### Tentativas SEM autenticação (curl, sem assinatura)
+$ curl -s -w '\nHTTP %{http_code}\n' http://127.0.0.1:9000/lab-bucket/teste.txt
+arquivo de teste do laboratório
+
+HTTP 200
+[código de saída: 0]
+$ curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:9000/lab-bucket/?list-type=2'
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>lab-bucket</Name><Prefix></Prefix><KeyCount>2</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated><Contents><Key>gravado-pelo-lab-user.txt</Key><LastModified>2026-11-19T17:56:19.534Z</LastModified><ETag>&#34;6851ab8aa5dc3d22fafdc5e1eff215c0&#34;</ETag><Size>9</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>teste.txt</Key><LastModified>2026-11-19T18:04:32.633Z</LastModified><ETag>&#34;34f939b0036c1f3fda99156bc781d881&#34;</ETag><Size>33</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>
+HTTP 200
+[código de saída: 0]
+$ curl -s -w '\nHTTP %{http_code}\n' -X PUT --data-binary 'escrito por anonimo' http://127.0.0.1:9000/lab-bucket/anonimo.txt
+
+HTTP 200
+[código de saída: 0]
+
+### Limpeza do objeto gravado anonimamente
+$ mcli --config-dir /root/.mcli-lab rm root/lab-bucket/anonimo.txt
+Removed `root/lab-bucket/anonimo.txt`.
+[código de saída: 0]

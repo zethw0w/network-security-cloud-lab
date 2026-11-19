@@ -1,0 +1,15 @@
+\chapter{Conclusão}
+
+O laboratório atingiu os objetivos propostos. A rede 192.168.50.0/24 foi dividida em
+sub-redes /26 e a ausência de comunicação entre sub-redes sem roteador foi demonstrada.
+O \textit{firewall} do servidor, com política de negação por padrão e uma única regra
+restrita por interface, origem, destino e porta, reduziu a superfície exposta ao cliente
+de duas portas (22 e 8080) para apenas a 8080, como comprovado pelas varreduras com
+\texttt{nmap}. No armazenamento, o \textit{bucket} configurado propositalmente como público
+permitiu leitura, listagem e escrita sem autenticação; após a correção, todas essas
+tentativas passaram a ser negadas. O usuário criado consegue apenas listar, ler e gravar
+no \textit{bucket} autorizado, e todas as ações fora desse escopo foram negadas.
+
+A principal lição é que controles de rede e de identidade se complementam: cada um cobre
+a falha do outro, e a verificação com testes reproduzíveis, com resultado esperado
+explícito, é o que permite afirmar que um controle realmente funciona.

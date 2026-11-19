@@ -1,0 +1,29 @@
+# fase3_bucket_privado.txt | host: servidor | script: fase3_bucket.sh | 2026-11-19 15:04:45 -03
+
+### Configuração de acesso anônimo: privado
+$ mcli --config-dir /root/.mcli-lab anonymous set private root/lab-bucket
+Access permission for `root/lab-bucket` is set to `private`
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab anonymous get root/lab-bucket
+Access permission for `root/lab-bucket` is `private`
+[código de saída: 0]
+$ mcli --config-dir /root/.mcli-lab anonymous get-json root/lab-bucket
+{}
+[código de saída: 0]
+
+### Tentativas SEM autenticação (curl, sem assinatura)
+$ curl -s -w '\nHTTP %{http_code}\n' http://127.0.0.1:9000/lab-bucket/teste.txt
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>teste.txt</Key><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/teste.txt</Resource><RequestId>18E98462AB1CEA37</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]
+$ curl -s -w '\nHTTP %{http_code}\n' 'http://127.0.0.1:9000/lab-bucket/?list-type=2'
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/</Resource><RequestId>18E98462AC2A2B01</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]
+$ curl -s -w '\nHTTP %{http_code}\n' -X PUT --data-binary 'escrito por anonimo' http://127.0.0.1:9000/lab-bucket/anonimo.txt
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied.</Message><Key>anonimo.txt</Key><BucketName>lab-bucket</BucketName><Resource>/lab-bucket/anonimo.txt</Resource><RequestId>18E98462AD308C37</RequestId><HostId>dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8</HostId></Error>
+HTTP 403
+[código de saída: 0]

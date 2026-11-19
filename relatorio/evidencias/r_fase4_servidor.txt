@@ -1,0 +1,31 @@
+# fase4_servidor.txt | host: servidor | script: fase4_servidor.sh | 2026-11-19 15:04:51 -03
+### Alias do usuário de menor privilégio
+### Teste 1: política anônima do bucket é private
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: private)
+### Teste 2: download anônimo negado
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+### Teste 3: listagem anônima negada
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+### Teste 4: upload anônimo negado
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: HTTP 403)
+### Teste 5: lab-user lista o lab-bucket
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: teste.txt)
+### Teste 6: lab-user lê objeto do lab-bucket
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: arquivo de teste)
+### Teste 7: lab-user grava objeto no lab-bucket
+=> RESULTADO: PASSOU (esperado: código 0; saída contendo: -)
+### Teste 8: lab-user NÃO cria bucket
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Teste 9: lab-user NÃO lista o outro-bucket
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Teste 10: lab-user NÃO lê objeto do outro-bucket
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Teste 11: lab-user NÃO apaga objeto (s3:DeleteObject não concedido)
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Teste 12: lab-user NÃO altera a política do bucket
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Teste 13: lab-user NÃO executa ação administrativa
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: access denied|accessdenied|insufficient permissions|not allowed)
+### Buckets visíveis para o lab-user
+### Firewall do servidor
+### Resumo: 13 teste(s), 0 falha(s)

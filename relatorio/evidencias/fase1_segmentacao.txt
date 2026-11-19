@@ -1,0 +1,40 @@
+# fase1_segmentacao.txt | host: cliente | script: fase1_segmentacao.sh | 2026-11-19 15:01:22 -03
+
+### Estado inicial (sub-rede A)
+$ ip -4 -br addr show dev eth1
+eth1             UP             192.168.50.20/26 
+[código de saída: 0]
+
+### Cliente movido para a sub-rede B
+$ ip addr flush dev eth1 && ip addr add 192.168.50.70/26 dev eth1
+
+[código de saída: 0]
+$ ip -4 -br addr show dev eth1
+eth1             UP             192.168.50.70/26 
+[código de saída: 0]
+$ ip route show dev eth1
+192.168.50.64/26 proto kernel scope link src 192.168.50.70 
+[código de saída: 0]
+
+### Teste 1: o servidor deixou de ser vizinho direto (rota não sai por eth1)
+$ ip route get 192.168.50.10
+192.168.50.10 via 10.0.2.2 dev eth0 src 10.0.2.15 uid 0 
+    cache 
+[código de saída: 0]
+=> RESULTADO: PASSOU (esperado: código *; saída contendo: !dev eth1( |$))
+
+### Teste 2: ping da sub-rede B para o servidor na sub-rede A falha
+$ ping -I eth1 -c 3 -W 1 192.168.50.10
+PING 192.168.50.10 (192.168.50.10) from 192.168.50.70 eth1: 56(84) bytes of data.
+
+--- 192.168.50.10 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2050ms
+[código de saída: 1]
+=> RESULTADO: PASSOU (esperado: código !0; saída contendo: -)
+
+### Restaurando o cliente para a sub-rede A (netplan apply)
+
+### Resumo: 2 teste(s), 0 falha(s)
+$ ip -4 -br addr show dev eth1
+eth1             UP             192.168.50.20/26 
+[código de saída: 0]
